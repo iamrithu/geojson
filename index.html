@@ -1,0 +1,330 @@
+<!--
+
+To run this demo, you need to replace 'YOUR_API_KEY' with an API key from the ArcGIS Developer dashboard.
+
+Sign up for a free account and get an API key.
+
+https://developers.arcgis.com/documentation/mapping-apis-and-services/get-started/
+
+ -->
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+    <title>Get length and area</title>
+    <style>
+      html,
+      body,
+      #viewDiv {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
+      }
+
+      #measurements {
+        padding: 4px 8px;
+        font-size: 16px;
+        bottom: 15px;
+        left: 50%;
+        margin-right: -50%;
+        transform: translate(-50%, -50%);
+      }
+    </style>
+
+    <link
+      rel="stylesheet"
+      href="https://js.arcgis.com/4.22/esri/themes/light/main.css"
+    />
+    <script src="https://js.arcgis.com/4.22/"></script>
+  </head>
+  <body>
+    <div id="viewDiv">
+      <div id="measurements" class="esri-widget"></div>
+      <button onclick="one()">click</button>
+    </div>
+  </body>
+  <script>
+    function one() {
+      console.log(Data);
+      let dataStr = JSON.stringify(Data);
+      let dataUri =
+        "data:application/geo+json;charset=utf-8," +
+        encodeURIComponent(dataStr);
+
+      let exportFileDefaultName = `new.geojson`;
+
+      let linkElement = document.createElement("a");
+      linkElement.setAttribute("href", dataUri);
+      linkElement.setAttribute("download", exportFileDefaultName);
+      linkElement.click();
+    }
+    require([
+      "esri/config",
+      "esri/Map",
+      "esri/views/MapView",
+
+      "esri/widgets/ScaleBar",
+      "esri/widgets/Sketch",
+      "esri/Graphic",
+      "esri/layers/GraphicsLayer",
+      "esri/geometry/geometryEngine",
+      "esri/geometry/support/webMercatorUtils",
+    ], (
+      esriConfig,
+      Map,
+      MapView,
+
+      ScaleBar,
+      Sketch,
+      Graphic,
+      GraphicsLayer,
+      geometryEngine,
+      webMercatorUtils
+    ) => {
+      esriConfig.apiKey =
+        "AAPK98c50a3510cc4cb9a07dc3116113843cqZssDSqHkgmBfOp_v5GIAETd4ggp7oleJJQPSyr9NmmTf-2GSs7swp9zS6T42ny7";
+      const map = new Map({
+        basemap: "arcgis-topographic", // Basemap layer service
+      });
+
+      const view = new MapView({
+        container: "viewDiv",
+        map: map,
+
+        center: [-10, 30],
+        zoom: 3,
+      });
+
+      const scalebar = new ScaleBar({
+        view: view,
+        unit: "metric",
+      });
+
+      view.ui.add(scalebar, "bottom-right");
+
+      const graphicsLayer = new GraphicsLayer();
+      map.add(graphicsLayer);
+
+      const sketch = new Sketch({
+        layer: graphicsLayer,
+        view: view,
+        availableCreateTools: ["polyline", "polygon", "rectangle"],
+        creationMode: "update",
+        updateOnGraphicClick: true,
+        visibleElements: {
+          createTools: {
+            point: false,
+            circle: false,
+          },
+          selectionTools: {
+            "lasso-selection": false,
+            "rectangle-selection": false,
+          },
+          settingsMenu: false,
+          undoRedoMenu: false,
+        },
+      });
+
+      view.ui.add(sketch, "top-right");
+
+      const measurements = document.getElementById("measurements");
+      view.ui.add(measurements, "manual");
+
+      const polygon = {
+        type: "polygon",
+        spatialReference: {
+          wkid: 102100,
+        },
+        rings: [
+          [-11781896.143093454, 8774435.300239421],
+          [-11038316.731935456, 8343941.956937423],
+          [-11351402.799791455, 7561226.787297426],
+          [-12564611.312733449, 7297060.417543927],
+          [-12848345.561727948, 8226534.681491423],
+          [-11781896.143093454, 8774435.300239421],
+        ],
+      };
+
+      const simplePolygonSymbol = {
+        type: "simple-fill",
+        outline: {
+          color: [200, 0, 0],
+          width: 2,
+        },
+      };
+
+      const polygonGraphic = new Graphic({
+        geometry: polygon,
+        symbol: simplePolygonSymbol,
+      });
+
+      graphicsLayer.add(polygonGraphic);
+
+      view.when(() => {
+        sketch.update(polygonGraphic);
+        getArea(polygonGraphic.geometry);
+      });
+
+      sketch.on("update", (e) => {
+        const geometry = e.graphics[0].geometry;
+
+        if (e.state === "start") {
+          switchType(geometry);
+        }
+
+        if (e.state === "complete") {
+        }
+        if (e.state === "remove") {
+          alert("hi");
+        }
+
+        if (
+          e.toolEventInfo &&
+          (e.toolEventInfo.type === "scale-stop" ||
+            e.toolEventInfo.type === "reshape-stop" ||
+            e.toolEventInfo.type === "move-stop")
+        ) {
+          switchType(geometry);
+        }
+      });
+
+      function getArea(polygon) {
+        const geodesicArea = geometryEngine.geodesicArea(
+          polygon,
+          "square-kilometers"
+        );
+        const planarArea = geometryEngine.planarArea(
+          polygon,
+          "square-kilometers"
+        );
+
+        measurements.innerHTML =
+          "<b>Geodesic area</b>:  " +
+          geodesicArea.toFixed(2) +
+          " km\xB2" +
+          " |   <b>Planar area</b>: " +
+          planarArea.toFixed(2) +
+          "  km\xB2";
+      }
+
+      function getLength(line) {
+        const geodesicLength = geometryEngine.geodesicLength(
+          line,
+          "kilometers"
+        );
+        const planarLength = geometryEngine.planarLength(line, "kilometers");
+
+        measurements.innerHTML =
+          "<b>Geodesic length</b>:  " +
+          geodesicLength.toFixed(2) +
+          " km" +
+          " |   <b>Planar length</b>: " +
+          planarLength.toFixed(2) +
+          "  km";
+      }
+
+      function switchType(geom) {
+        // console.log(webMercatorUtils.webMercatorToGeographic(geom).toJSON());
+        var value = webMercatorUtils.webMercatorToGeographic(geom).toJSON();
+
+        if (geom.type === "polygon") {
+          value.rings.map((info) => {
+            return console.log(
+              info.map((e) => {
+                return e;
+              })
+            );
+          });
+
+          Data.features.push({
+            type: "Feature",
+            geometry: {
+              type: "Polygon",
+              coordinates: value.rings.map((info) => {
+                return info.map((e) => {
+                  return e;
+                });
+              }),
+            },
+            properties: {
+              name: "",
+            },
+          });
+        }
+        if (geom.type === "polyline") {
+          value.paths[0].map((info) => {
+            return info.map((e) => {
+              console.log();
+            });
+          });
+
+          Data.features.push({
+            type: "Feature",
+            geometry: {
+              type: "LineString",
+              coordinates: value.paths[0].map((info) => {
+                return info.map((e) => {
+                  return e;
+                });
+              }),
+            },
+            properties: {
+              name: "",
+            },
+          });
+        }
+
+        // console.log(geom.toJSON());
+        switch (geom.type) {
+          case "polygon":
+            getArea(geom);
+
+            break;
+          case "polyline":
+            getLength(geom);
+            break;
+          default:
+            console.log("No value found");
+        }
+      }
+    });
+
+    function exportToJsonFile(jsonData) {
+      let dataStr = JSON.stringify(jsonData);
+      let dataUri =
+        "data:application/geo+json;charset=utf-8," +
+        encodeURIComponent(dataStr);
+
+      let exportFileDefaultName = `${jsonData.properties.name}.geojson`;
+
+      let linkElement = document.createElement("a");
+      linkElement.setAttribute("href", dataUri);
+      linkElement.setAttribute("download", exportFileDefaultName);
+      linkElement.click();
+    }
+    var Data = {
+      type: "FeatureCollection",
+      features: [],
+    };
+    var data = {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          geometry: {
+            type: "Point",
+            coordinates: [20, 10],
+          },
+          properties: {
+            name: "null island",
+          },
+        },
+      ],
+    };
+    // exportToJsonFile(data);
+  </script>
+</html>
