@@ -21,6 +21,7 @@ https://developers.arcgis.com/documentation/mapping-apis-and-services/get-starte
       #viewDiv {
         padding: 0;
         margin: 0;
+        overflow: hidden;
         height: 100%;
         width: 100%;
       }
@@ -33,6 +34,100 @@ https://developers.arcgis.com/documentation/mapping-apis-and-services/get-starte
         margin-right: -50%;
         transform: translate(-50%, -50%);
       }
+
+      #export {
+        display: none;
+        height: 400px;
+        background-color: rgb(44, 42, 42);
+        color: rgb(255, 255, 255);
+        font-size: 14px;
+        font-weight: bolder;
+        border-radius: 5px;
+        width: 300px;
+        position: absolute;
+        top: 50%;
+        right: 40%;
+        transform: translateY(-50%);
+      }
+      .dropbtn {
+        background-color: rgb(18, 121, 193);
+        color: white;
+        padding: 6px 16px;
+        font-size: 14px;
+        border: none;
+        cursor: pointer;
+      }
+
+      .dropdown {
+        position: absolute;
+        top: 18%;
+        right: 4%;
+        display: inline-block;
+      }
+
+      .dropdown-content {
+        display: none;
+        position: absolute;
+        background-color: #f9f9f9;
+
+        box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+        z-index: 1;
+      }
+
+      .dropdown-content a {
+        color: black;
+        padding: 12px 16px;
+        text-decoration: none;
+        display: block;
+      }
+
+      .dropdown-content a:hover {
+        background-color: #f1f1f1;
+      }
+
+      .dropdown:hover .dropdown-content {
+        display: block;
+      }
+      .esri-print__exported-file-link-title,
+      .esri-widget__heading {
+        color: white;
+      }
+
+      .esri-print__advanced-options {
+        display: none;
+      }
+
+      #cross {
+        position: absolute;
+        display: none;
+        z-index: 2;
+        top: 17%;
+        right: 41%;
+        justify-content: center;
+        align-items: center;
+
+        color: rgb(250, 244, 244);
+        font-weight: bolder;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background-color: rgb(18, 121, 193);
+        cursor: pointer;
+      }
+      .expt {
+        padding: 8px 4px;
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        outline: none;
+        border: none;
+      }
+      .expt:hover {
+        background-color: rgba(18, 120, 193, 0.349);
+      }
+      button {
+        border-radius: 2px;
+      }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.5/jspdf.debug.js"></script>
     <link
@@ -42,12 +137,27 @@ https://developers.arcgis.com/documentation/mapping-apis-and-services/get-starte
     <script src="https://js.arcgis.com/4.22/"></script>
   </head>
   <body>
-    <div id="viewDiv">
-      <div id="measurements" class="esri-widget"></div>
-      <button onclick="one()">Export</button>
+    <div id="viewDiv"></div>
+    <div id="measurements" class="esri-widget"></div>
+    <div id="export"></div>
+    <div id="cross" onclick="cross()">X</div>
+    <div class="dropdown">
+      <button class="dropbtn">Export</button>
+      <div class="dropdown-content">
+        <button class="expt" onclick="one()">geoJSON</button>
+        <button class="expt" onclick="file()">File</button>
+      </div>
     </div>
   </body>
   <script>
+    function cross() {
+      document.getElementById("export").style.display = "none";
+      document.getElementById("cross").style.display = "none";
+    }
+    function file() {
+      document.getElementById("export").style.display = "block";
+      document.getElementById("cross").style.display = "flex";
+    }
     var Data = {
       type: "FeatureCollection",
       features: [],
@@ -96,6 +206,7 @@ https://developers.arcgis.com/documentation/mapping-apis-and-services/get-starte
       "esri/layers/GraphicsLayer",
       "esri/geometry/geometryEngine",
       "esri/geometry/support/webMercatorUtils",
+      "esri/widgets/Print",
     ], (
       esriConfig,
       Map,
@@ -106,7 +217,8 @@ https://developers.arcgis.com/documentation/mapping-apis-and-services/get-starte
       Graphic,
       GraphicsLayer,
       geometryEngine,
-      webMercatorUtils
+      webMercatorUtils,
+      Print
     ) => {
       esriConfig.apiKey =
         "AAPK98c50a3510cc4cb9a07dc3116113843cqZssDSqHkgmBfOp_v5GIAETd4ggp7oleJJQPSyr9NmmTf-2GSs7swp9zS6T42ny7";
@@ -120,6 +232,18 @@ https://developers.arcgis.com/documentation/mapping-apis-and-services/get-starte
 
         center: [-10, 30],
         zoom: 3,
+      });
+
+      view.when(() => {
+        const print = new Print({
+          view: view,
+          // specify your own print service
+          printServiceUrl:
+            "https://utility.arcgisonline.com/arcgis/rest/services/Utilities/PrintingTools/GPServer/Export%20Web%20Map%20Task",
+          container: "export",
+        });
+
+        // Add widget to the top right corner of the view
       });
 
       const scalebar = new ScaleBar({
