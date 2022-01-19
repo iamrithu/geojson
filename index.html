@@ -48,19 +48,33 @@ https://developers.arcgis.com/documentation/mapping-apis-and-services/get-starte
     </div>
   </body>
   <script>
+    var Data = {
+      type: "FeatureCollection",
+      features: [],
+    };
     function one() {
-      console.log(Data);
-      let dataStr = JSON.stringify(Data);
-      let dataUri =
-        "data:application/geo+json;charset=utf-8," +
-        encodeURIComponent(dataStr);
-
-      let exportFileDefaultName = `new.geojson`;
-
-      let linkElement = document.createElement("a");
-      linkElement.setAttribute("href", dataUri);
-      linkElement.setAttribute("download", exportFileDefaultName);
-      linkElement.click();
+      if (Data.features.length > 0) {
+        if (confirm("Are you sure to export this file") === true) {
+          var obj = prompt("File Name");
+          if (obj != null && obj != "") {
+            let dataStr = JSON.stringify(Data);
+            let dataUri =
+              "data:application/geo+json;charset=utf-8," +
+              encodeURIComponent(dataStr);
+            let exportFileDefaultName = `${obj}.geojson`;
+            let linkElement = document.createElement("a");
+            linkElement.setAttribute("href", dataUri);
+            linkElement.setAttribute("download", exportFileDefaultName);
+            linkElement.click();
+          } else {
+            alert("File name is  required");
+          }
+        } else {
+          alert("Thank you");
+        }
+      } else {
+        alert("nope");
+      }
     }
     require([
       "esri/config",
@@ -284,11 +298,6 @@ https://developers.arcgis.com/documentation/mapping-apis-and-services/get-starte
         }
       }
     });
-
-    var Data = {
-      type: "FeatureCollection",
-      features: [],
-    };
 
     // exportToJsonFile(data);
   </script>
