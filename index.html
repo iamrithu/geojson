@@ -112,13 +112,13 @@ https://developers.arcgis.com/documentation/mapping-apis-and-services/get-starte
       const sketch = new Sketch({
         layer: graphicsLayer,
         view: view,
-        availableCreateTools: ["polyline", "polygon", "rectangle"],
+
         creationMode: "update",
         updateOnGraphicClick: true,
         visibleElements: {
           createTools: {
-            point: false,
-            circle: false,
+            point: true,
+            circle: true,
           },
           selectionTools: {
             "lasso-selection": false,
@@ -231,61 +231,53 @@ https://developers.arcgis.com/documentation/mapping-apis-and-services/get-starte
         // console.log(webMercatorUtils.webMercatorToGeographic(geom).toJSON());
         var value = webMercatorUtils.webMercatorToGeographic(geom).toJSON();
 
-        if (geom.type === "polygon") {
-          value.rings.map((info) => {
-            return console.log(
-              info.map((e) => {
-                return e;
-              })
-            );
-          });
-
-          Data.features.push({
-            type: "Feature",
-            geometry: {
-              type: "Polygon",
-              coordinates: value.rings.map((info) => {
-                return info.map((e) => {
-                  return e;
-                });
-              }),
-            },
-            properties: {
-              name: "",
-            },
-          });
-        }
-        if (geom.type === "polyline") {
-          value.paths[0].map((info) => {
-            return info.map((e) => {
-              console.log();
-            });
-          });
-
-          Data.features.push({
-            type: "Feature",
-            geometry: {
-              type: "LineString",
-              coordinates: value.paths[0].map((info) => {
-                return info.map((e) => {
-                  return e;
-                });
-              }),
-            },
-            properties: {
-              name: "",
-            },
-          });
-        }
-
-        // console.log(geom.toJSON());
         switch (geom.type) {
           case "polygon":
             getArea(geom);
+            Data.features.push({
+              type: "Feature",
+              geometry: {
+                type: "Polygon",
+                coordinates: value.rings.map((info) => {
+                  return info.map((e) => {
+                    return e;
+                  });
+                }),
+              },
+              properties: {
+                name: "",
+              },
+            });
 
             break;
           case "polyline":
             getLength(geom);
+            Data.features.push({
+              type: "Feature",
+              geometry: {
+                type: "LineString",
+                coordinates: value.paths[0].map((info) => {
+                  return info.map((e) => {
+                    return e;
+                  });
+                }),
+              },
+              properties: {
+                name: "",
+              },
+            });
+            break;
+          case "point":
+            Data.features.push({
+              type: "Feature",
+              geometry: {
+                type: "Point",
+                coordinates: [value.x, value.y],
+              },
+              properties: {
+                name: "",
+              },
+            });
             break;
           default:
             console.log("No value found");
@@ -293,38 +285,11 @@ https://developers.arcgis.com/documentation/mapping-apis-and-services/get-starte
       }
     });
 
-    function exportToJsonFile(jsonData) {
-      let dataStr = JSON.stringify(jsonData);
-      let dataUri =
-        "data:application/geo+json;charset=utf-8," +
-        encodeURIComponent(dataStr);
-
-      let exportFileDefaultName = `${jsonData.properties.name}.geojson`;
-
-      let linkElement = document.createElement("a");
-      linkElement.setAttribute("href", dataUri);
-      linkElement.setAttribute("download", exportFileDefaultName);
-      linkElement.click();
-    }
     var Data = {
       type: "FeatureCollection",
       features: [],
     };
-    var data = {
-      type: "FeatureCollection",
-      features: [
-        {
-          type: "Feature",
-          geometry: {
-            type: "Point",
-            coordinates: [20, 10],
-          },
-          properties: {
-            name: "null island",
-          },
-        },
-      ],
-    };
+
     // exportToJsonFile(data);
   </script>
 </html>
